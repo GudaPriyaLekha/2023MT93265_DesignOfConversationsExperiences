@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Priya Lekha Open AI Learning Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        textarea, input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .result { margin-top: 20px; padding: 10px; background-color: #f4f4f4; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>2023MT93265 Design of Conversational Experiences Assignment 3</h2>
+        
+        <h3>Task 1: Text Generation</h3>
+        <textarea id="prompt" rows="4" placeholder="Enter your prompt here..."></textarea>
+        <button onclick="generateText()">Generate Text</button>
+        <div id="textResult" class="result"></div>
+
+        <!-- <h3>Speech to Text</h3>
+        <input type="text" id="audioUrl" placeholder="Enter Audio URL here...">
+        <button onclick="speechToText()">Transcribe Audio</button>
+        <div id="speechResult" class="result"></div> -->
+
+        <div class="section">
+            <h3>Task 2 Step 1: Generate Transcription ID</h3>
+            <input type="text" id="audioUrl" placeholder="Enter Audio URL here..." />
+            <button onclick="speechToText()">Generate Transcription ID</button>
+            <div id="transcriptionIdResult" class="result"></div>
+        </div>
+    
+        <!-- Section 2: Get Transcription Text -->
+        <div class="section">
+            <h3>Task 2 Step 2: Retrieve Transcription Text</h3>
+            <input type="text" id="transcriptionIdInput" placeholder="Enter Transcription ID here..." />
+            <button onclick="getTranscriptionResult()">Get Transcription</button>
+            <div id="speechResult" class="result"></div>
+        </div>
+
+        <h3>Task 3: Summarize large text to small paragraph</h3>
+        <textarea id="text-to-summarize" rows="4" placeholder="Enter text to summarize here..."></textarea>
+        <button onclick="summarizeText()">Summarize</button>
+        <div id="summaryResult" class="result"></div>
+
+        <h3>Task 4: Analysis of sentiments</h3>
+        <textarea id="textInput" rows="4" placeholder="Enter text to analyze..."></textarea>
+        <button onclick="analyzeSentiment()">Analyze Sentiment</button>
+        <div id="result"></div>
+
+        <h3>Task 5: Enhance Image quality</h3>
+        <input type="text" id="image-url" placeholder="Enter Azure Blob Image URL here..." />
+        <button onclick="enhanceImage()">Enhance Image</button>
+        <div id="enhanceResult" class="result"></div>
+    
+        <script>
+            // Function to initiate speech-to-text and get the transcription ID
+            async function speechToText() {
+                const audioUrl = document.getElementById("audioUrl").value;
+    
+                if (!audioUrl) {
+                    document.getElementById("transcriptionIdResult").innerText = "Please enter an audio URL.";
+                    return;
+                }
+    
+                try {
+                    const response = await fetch('/speech-to-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ audioUrl })
+                    });
+    
+                    if (response.ok) {
+                        const data = await response.json();
+                        document.getElementById("transcriptionIdResult").innerText = `Transcription ID: ${data.transcriptionId}`;
+                    } else {
+                        const errorData = await response.json();
+                        document.getElementById("transcriptionIdResult").innerText = `Error: ${errorData.error}`;
+                    }
+                } catch (error) {
+                    console.error("Error in speech-to-text:", error);
+                    document.getElementById("transcriptionIdResult").innerText = "Failed to generate transcription ID.";
+                }
+            }
+    
+            // Function to get transcription text using the transcription ID
+            async function getTranscriptionResult() {
+                const transcriptionId = document.getElementById("transcriptionIdInput").value;
+    
+                if (!transcriptionId) {
+                    document.getElementById("speechResult").innerText = "Please enter a transcription ID.";
+                    return;
+                }
+    
+                try {
+                    // Construct the URL dynamically with the transcription ID
+                    const response = await fetch(`/transcription-result/${transcriptionId}`);
+    
+                    if (response.ok) {
+                        const data = await response.json();
+    
+                        if (data.transcription) {
+                            document.getElementById("speechResult").innerText = `Transcription: ${data.transcription}`;
+                        } else if (data.status) {
+                            document.getElementById("speechResult").innerText = data.status;
+                        }
+                    } else {
+                        const errorData = await response.json();
+                        document.getElementById("speechResult").innerText = `Error: ${errorData.error}`;
+                    }
+                } catch (error) {
+                    console.error("Error getting transcription result:", error);
+                    document.getElementById("speechResult").innerText = "Failed to retrieve transcription result.";
+                }
+            }
+            async function generateText() {
+            const prompt = document.getElementById('prompt').value;
+            if (!prompt) {
+                alert("Please enter a prompt.");
+                return;
+            }
+
+            const response = await fetch('http://localhost:3000/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+
+            const result = await response.json();
+            document.getElementById('textResult').textContent = result.result || 'No result generated';
+        }
+
+         // Function to get summary of the paragraph
+        async function summarizeText() {
+            const text = document.getElementById('text-to-summarize').value;
+            if (!text) {
+                alert("Please enter text to summarize.");
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+
+                const result = await response.json();
+                document.getElementById('summaryResult').textContent = result.summary || 'No summary generated';
+            } catch (error) {
+                console.error("Error in summarization:", error);
+                document.getElementById('summaryResult').textContent = "Failed to summarize text.";
+            }
+        }
+
+        // Enhance Image
+        async function enhanceImage() {
+            const imageUrl = document.getElementById('image-url').value;
+            if (!imageUrl) {
+                alert("Please enter an image URL.");
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/enhance-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl })
+                });
+
+                const result = await response.json();
+                document.getElementById('enhanceResult').innerHTML = `
+                    <p>${result.message}</p>
+                    <p>Enhanced Image Path: ${result.enhancedImagePath}</p>
+                `;
+            } catch (error) {
+                console.error("Error in image enhancement:", error);
+                document.getElementById('enhanceResult').textContent = "Failed to enhance the image.";
+            }
+        }
+
+         // Function to analyse the sentiments
+        async function analyzeSentiment() {
+            const text = document.getElementById('textInput').value;
+            if (!text) {
+                alert("Please enter some text.");
+                return;
+            }
+
+            const response = await fetch('http://localhost:3000/analyze-sentiment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('result').innerText = `Sentiment: ${result.sentiment} (Score: ${result.score})`;
+            } else {
+                document.getElementById('result').innerText = `Error: ${result.error}`;
+            }
+        }
+        </script>
+</body>
+</html>
+
